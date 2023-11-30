@@ -68,4 +68,18 @@ public class JSONString implements JSONValue {
     return this.value;
   } // getValue()
 
+    /*
+   * Concatonate two JSONStrings
+   */
+  public JSONString concatJSONStr(JSONString JSONStr1, JSONString JSONStr2) {
+    String finalStr = "";
+
+    String str1 = JSONStr1.toString();
+    String str2 = JSONStr2.toString();
+
+    finalStr = str1.concat(str2);
+
+    return new JSONString(finalStr);
+  } // concatJSONStr(JSONString, JSONString)
+
 } // class JSONString
