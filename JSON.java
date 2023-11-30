@@ -60,20 +60,24 @@ public class JSON {
   static JSONValue parseKernel(Reader source) throws ParseException, IOException {
     int ch = readChar(source);
     ch = skipWhitespace(source, ch);
-    if (ch == -1) {
+    if (-1 == ch) {
         throw new ParseException("Unexpected end of file", pos);
     }
 
     if (ch == '\"') {
+      System.out.println("parsing string");
         // Parse a string
-        StringBuilder stringBuilder = new StringBuilder();
+        String str = new String("");
+        // JSONString JSONString = new JSONString("");
         while ((ch = source.read()) != -1) {
             ++pos;
             if (ch == '\"') {
-                JSONString jsonString = new JSONString(stringBuilder.toString());
-                return jsonString;
-            } else {
-                stringBuilder.append((char) ch);
+                // System.out.println(stringBuilder.toString());
+                JSONString JSONString = new JSONString(str);
+                return (JSONValue) JSONString;
+            } else { 
+                System.out.println((char) ch);
+                str += String.valueOf(ch);
             }
         }
         throw new ParseException("Undetermined String", pos);
@@ -101,46 +105,45 @@ public class JSON {
         pos++;
         return (JSONValue) jsonArray;
     } else if (ch == '{') {
-        // Parse an object
-        JSONHash jsonHash = new JSONHash();
-        while ((ch = skipWhitespace(source, ch)) != -1 && ch != '}') {
-            JSONString hashKey = (JSONString) parseKernel(source);
+      System.out.println("parsing hash");
+      // Parse an array
+      JSONHash jsonHash = new JSONHash();
+      while ((ch = skipWhitespace(source, ch)) != -1 && ch != '}') {
+        System.out.println((char) ch);
+        JSONString hashKey = (JSONString) parseKernel(source);
 
-            // Check for colon
-            ch = skipWhitespace(source, ch);
-            if (ch == ':') {
-                //pos++;
-            } else {
-                //throw new ParseException("Expected ':' after object key", pos);
-                continue;
-            }
+        // Check for comma or closing bracket
+        ch = skipWhitespace(source, ch);
 
-            // Parse the corresponding value
-            JSONValue hashVal = parseKernel(source);
-            pos++;
-            jsonHash.set(hashKey, hashVal);
+        // if (ch == ':') {
+        //   pos++;
+        // }
 
-            // Check for comma or closing bracket
-            ch = skipWhitespace(source, ch);
-            if (ch == ',') {
-                // Consume comma
-                pos++;
-            } else if (ch != '}') {
-                throw new ParseException("Expected ',' or '}' after object element", pos);
-            }
-        }
-
-        if (ch == -1) {
-            throw new ParseException("Unexpected end of file in object", pos);
-        }
-
-        // Consume closing bracket
+        JSONValue hashVal = parseKernel(source);
         pos++;
-        return (JSONValue) jsonHash;
+        System.out.println(ch);
+        jsonHash.set(hashKey, hashVal);
+
+        if (ch == ',') {
+          // Consume comma
+          pos++;
+        } else if (ch != '}') {
+          throw new ParseException("Expected ',' or ']' after array element", pos);
+        }
+      }
+
+      if (ch == -1) {
+        throw new ParseException("Unexpected end of file in array", pos);
+      }
+
+      // Consume closing bracket
+      pos++;
+      return (JSONValue) jsonHash;
     }
 
     throw new ParseException("Unimplemented", pos);
 }
+
 
   /**
    * Get the next character from source, skipping over whitespace.
