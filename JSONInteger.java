@@ -3,7 +3,10 @@ import java.math.BigInteger;
 
 /**
  * JSON integers.
- */
+ * 
+ * @authors Jonathan Wang, Jinny Eo, Madel Sibal
+ *          November 2023
+ */ 
 public class JSONInteger implements JSONValue {
 
   // +--------+------------------------------------------------------
@@ -55,14 +58,22 @@ public class JSONInteger implements JSONValue {
    * Compare to another object.
    */
   public boolean equals(Object other) {
-    return true;        // STUB
-  } // equals(Object)
+    if (this == other) {
+      return true;
+    }
+
+    if (other instanceof JSONInteger) {
+      return this.value.equals(((JSONInteger) other).value);
+    }
+    return false;
+  }
+  // equals(Object)
 
   /**
    * Compute the hash code.
    */
   public int hashCode() {
-    return 0;           // STUB
+    return value.hashCode();
   } // hashCode()
 
   // +--------------------+------------------------------------------
@@ -73,7 +84,7 @@ public class JSONInteger implements JSONValue {
    * Write the value as JSON.
    */
   public void writeJSON(PrintWriter pen) {
-                        // STUB
+    pen.println(this.value.toString());
   } // writeJSON(PrintWriter)
 
   /**

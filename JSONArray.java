@@ -4,6 +4,9 @@ import java.util.Iterator;
 
 /**
  * JSON arrays.
+ * 
+ * @authors Jonathan Wang, Jinny Eo, Madel Sibal
+ *          November 2023
  */
 public class JSONArray implements JSONValue {
 
@@ -35,21 +38,34 @@ public class JSONArray implements JSONValue {
    * Convert to a string (e.g., for printing).
    */
   public String toString() {
-    return "";          // STUB
+    if (values == null) {
+      return "null";
+    }
+    
+    return this.values.toString();
   } // toString()
 
   /**
    * Compare to another object.
    */
   public boolean equals(Object other) {
-    return true;        // STUB
+    if (this == other) {
+      return true; 
+    }
+         
+    if (other instanceof JSONInteger) {
+      return this.values.equals(((JSONArray) other).values);
+    }
+    return false;
   } // equals(Object)
 
   /**
    * Compute the hash code.
    */
   public int hashCode() {
-    return 0;           // STUB
+    if (this.values == null)
+      return 0;
+    return values.hashCode();
   } // hashCode()
 
   // +--------------------+------------------------------------------
@@ -60,7 +76,18 @@ public class JSONArray implements JSONValue {
    * Write the value as JSON.
    */
   public void writeJSON(PrintWriter pen) {
-                        // STUB
+    pen.print("["); // Start the array
+
+    Iterator<JSONValue> iterator = this.values.iterator();
+    while (iterator.hasNext()) {
+      JSONValue value = iterator.next();
+      value.writeJSON(pen); // Write each element
+      if (iterator.hasNext()) {
+        pen.print(", "); // Add comma if there are more elements
+      }
+    }
+
+    pen.print("]"); // End the array
   } // writeJSON(PrintWriter)
 
   /**

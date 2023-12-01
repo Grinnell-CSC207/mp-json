@@ -3,6 +3,9 @@ import java.math.BigDecimal;
 
 /**
  * JSON reals.
+ * 
+ * @authors Jonathan Wang, Jinny Eo, Madel Sibal
+ *          November 2023
  */
 public class JSONReal implements JSONValue {
 
@@ -48,6 +51,10 @@ public class JSONReal implements JSONValue {
    * Convert to a string (e.g., for printing).
    */
   public String toString() {
+    if (value == null) {
+      return "null";
+    }
+    
     return this.value.toString();
   } // toString()
 
@@ -55,14 +62,23 @@ public class JSONReal implements JSONValue {
    * Compare to another object.
    */
   public boolean equals(Object other) {
-    return true;        // STUB
+    if (this == other) {
+      return true; 
+    }
+         
+    if (other instanceof JSONInteger) {
+      return this.value.equals(((JSONReal) other).value);
+    }
+    return false;
   } // equals(Object)
 
   /**
    * Compute the hash code.
    */
   public int hashCode() {
-    return 0;           // STUB
+    if (this.value == null)
+      return 0;
+    return value.hashCode();
   } // hashCode()
 
   // +--------------------+------------------------------------------
@@ -73,7 +89,7 @@ public class JSONReal implements JSONValue {
    * Write the value as JSON.
    */
   public void writeJSON(PrintWriter pen) {
-                        // STUB
+    pen.println(this.value.toString());
   } // writeJSON(PrintWriter)
 
   /**

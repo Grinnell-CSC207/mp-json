@@ -8,3 +8,4 @@ Implemented by NAME and NAME for CSC-207-01 2023Fa.
 Acknowledgements:
 
 * Skeleton code by SamR
+* Methods and main written by Jonathan Wang, Jinny Eo, & Madel Sibal
