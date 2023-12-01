@@ -1,11 +1,12 @@
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.text.ParseException;
+import java.io.Reader;
 
 /**
  * Utilities for our simple implementation of JSON.
+ * 
+ * @authors Jonathan Wang, Jinny Eo, Madel Sibal
+ *          November 2023
  */
 public class JSON {
   // +---------------+-----------------------------------------------
@@ -25,17 +26,18 @@ public class JSON {
    * Parse a string into JSON.
    */
   public static JSONValue parse(String source) throws ParseException, IOException {
-    return parse(new StringReader(source));
+    try (Reader readerSource = new java.io.StringReader(source)) {
+      return parse(readerSource);
+    }
   } // parse(String)
 
   /**
    * Parse a file into JSON.
    */
   public static JSONValue parseFile(String filename) throws ParseException, IOException {
-    FileReader reader = new FileReader(filename);
-    JSONValue result = parse(reader);
-    reader.close();
-    return result;
+    try (java.io.FileReader reader = new java.io.FileReader(filename)) {
+      return parse(reader);
+    }
   } // parseFile(String)
 
   /**
@@ -44,11 +46,11 @@ public class JSON {
   public static JSONValue parse(Reader source) throws ParseException, IOException {
     pos = 0;
     JSONValue result = parseKernel(source);
-    if (-1 != skipWhitespace(source, source.read())) {
+    if (-1 != skipWhitespace(source)) {
       throw new ParseException("Characters remain at end", pos);
     }
     return result;
-  } // parse(Reader)
+  } // parseFile(Reader)
 
   // +---------------+-----------------------------------------------
   // | Local helpers |
@@ -57,102 +59,161 @@ public class JSON {
   /**
    * Parse JSON from a reader, keeping track of the current position
    */
-  static JSONValue parseKernel(Reader source) throws ParseException, IOException {
-    int ch = readChar(source);
-    ch = skipWhitespace(source, ch);
-    if (-1 == ch) {
-        throw new ParseException("Unexpected end of file", pos);
+  private static JSONValue parseKernel(Reader source) throws ParseException, IOException {
+    int ch = 0;
+
+    while ((ch = skipWhitespace(source)) != -1) {
+      return determineWhichIf(source, ch); // Return the parsed result
     }
 
-    if (ch == '\"') {
-      System.out.println("parsing string");
-        // Parse a string
-        String str = new String("");
-        // JSONString JSONString = new JSONString("");
-        while ((ch = source.read()) != -1) {
-            ++pos;
-            if (ch == '\"') {
-                // System.out.println(stringBuilder.toString());
-                JSONString JSONString = new JSONString(str);
-                return (JSONValue) JSONString;
-            } else { 
-                System.out.println((char) ch);
-                str += String.valueOf(ch);
-            }
-        }
-        throw new ParseException("Undetermined String", pos);
-    } else if (ch == '[') {
-        // Parse an array
-        JSONArray jsonArray = new JSONArray();
-        while ((ch = skipWhitespace(source, ch)) != -1 && ch != ']') {
-            jsonArray.add(parseKernel(source));
+    return null;
+  } // parseKernel(Reader)
 
-            // Check for comma or closing bracket
-            ch = skipWhitespace(source, ch);
-            if (ch == ',') {
-                // Consume comma
-                pos++;
-            } else if (ch != ']') {
-                throw new ParseException("Expected ',' or ']' after array element", pos);
-            }
-        }
+  /**
+   * Handles case for parsing Array values
+   */
+  private static JSONValue ifArray(Reader source, int ch) throws IOException {
+    System.out.println("parsing array");
 
-        if (ch == -1) {
-            throw new ParseException("Unexpected end of file in array", pos);
-        }
+    JSONArray jsonArray = new JSONArray();
 
-        // Consume closing bracket
-        pos++;
-        return (JSONValue) jsonArray;
-    } else if (ch == '{') {
-      System.out.println("parsing hash");
-      // Parse an array
-      JSONHash jsonHash = new JSONHash();
-      while ((ch = skipWhitespace(source, ch)) != -1 && ch != '}') {
-        System.out.println((char) ch);
-        JSONString hashKey = (JSONString) parseKernel(source);
+    while (ch != -1 && ch != ']') {
+      System.out.println("Current char: " + (char) ch);
 
-        // Check for comma or closing bracket
-        ch = skipWhitespace(source, ch);
+      // Handle array elements
+      JSONValue element = determineWhichIf(source, ch);
 
-        // if (ch == ':') {
-        //   pos++;
-        // }
+      if (element != null) {
+        System.out.println("Element: " + element);
+        jsonArray.add(element);
 
-        JSONValue hashVal = parseKernel(source);
-        pos++;
-        System.out.println(ch);
-        jsonHash.set(hashKey, hashVal);
+        // Move to the next character after the element
+        ch = skipWhitespace(source);
 
-        if (ch == ',') {
-          // Consume comma
-          pos++;
-        } else if (ch != '}') {
-          throw new ParseException("Expected ',' or ']' after array element", pos);
-        }
+      } else {
+        // Handle the case where the element is null
+        // You might want to log an error or throw an exception
+        System.err.println("Error: Element is null");
+        break; // Exit the loop or handle the error accordingly
       }
-
-      if (ch == -1) {
-        throw new ParseException("Unexpected end of file in array", pos);
-      }
-
-      // Consume closing bracket
-      pos++;
-      return (JSONValue) jsonHash;
     }
 
-    throw new ParseException("Unimplemented", pos);
-}
+    if (ch == ']') {
+      System.out.println("Closing array");
+      ch = skipWhitespace(source);
+    } else {
+      System.err.println("closing bracket is missing");
+    }
 
+    return jsonArray;
+  } // ifArray(Reader, int)
+
+  /**
+   * Handles cases for parsing Hash values
+   */
+  private static JSONValue ifHash(Reader source, int ch) throws IOException {
+    System.out.println("parsing hash");
+
+    JSONHash jsonHash = new JSONHash();
+
+    while (ch != -1 && ch != '}') {
+      System.out.println("Current char: " + (char) ch);
+
+      // Skip commas
+      if (ch == ',') {
+        ch = skipWhitespace(source);
+        continue;
+      }
+
+      // Handle key-value pairs within the hash
+      // For simplicity, assume keys are strings and values can be any JSON type
+      JSONValue key = determineWhichIf(source, ch);
+
+      if (key != null) {
+        String keyString = key.toString(); // Convert key to string
+        System.out.println("Key: " + keyString);
+        ch = skipWhitespace(source);
+
+        if (ch == ':') {
+          ch = skipWhitespace(source);
+
+          // Check if ':' is missing
+          if (ch == -1) {
+            System.err.println("Error: ':' is missing in key-value pair");
+            break;
+          }
+
+          JSONValue value = determineWhichIf(source, ch);
+          System.out.println("Value: " + value);
+
+          // Add key-value pair to the hash
+          jsonHash.set(new JSONString(keyString), value);
+
+          // Move to the next character after the value
+          ch = skipWhitespace(source);
+        } else {
+          // Handle the case where ':' is missing
+          System.err.println("Error: ':' is missing in key-value pair");
+          break; // Exit the loop or handle the error accordingly
+        }
+      } else {
+        // Handle the case where the key is null
+        // You might want to log an error or throw an exception
+        System.err.println("Error: Key is null");
+        break; // Exit the loop or handle the error accordingly
+      }
+    }
+
+    return jsonHash;
+  } // ifHash(Reader, int)
+
+  /**
+   * Handles cases for parsing String values
+   */
+  private static JSONString ifString(Reader source, int ch) throws IOException {
+    StringBuilder stringBuilder = new StringBuilder();
+
+    // Loop through the JSON input and append stringBuilder for output
+    while (ch != -1 && (Character.isLetterOrDigit(ch) || ch == '_' && ch != '[')) {
+      stringBuilder.append((char) ch);
+      ch = source.read();
+    }
+
+    String stringValue = stringBuilder.toString();
+    return new JSONString(stringValue); // Return the stringBuilder
+  } // ifString(Reader, int)
+
+  /**
+   * Determine which KVPair value is to be parsed
+   */
+  private static JSONValue determineWhichIf(Reader source, int ch) throws IOException {
+    switch (ch) {
+      case '{':
+        return ifHash(source, skipWhitespace(source));
+      case '[':
+        return ifArray(source, skipWhitespace(source));
+      case '\"':
+        return ifString(source, skipWhitespace(source));
+      // Add cases for other JSON types (e.g., numbers, boolean, null)
+      default:
+        // Handle numbers as keys
+        if (Character.isDigit(ch)) {
+          return ifString(source, ch);
+        }
+        // Handle other cases as needed
+        return null;
+    }
+  } // determineWhichIf(Reader, int)
 
   /**
    * Get the next character from source, skipping over whitespace.
    */
-  static int skipWhitespace(Reader source, int ch) throws IOException {
-    while (isWhitespace(ch)) {
+  static int skipWhitespace(Reader source) throws IOException {
+    int ch;
+    do {
       ch = source.read();
-      pos++;
-    } 
+      ++pos;
+    } while (isWhitespace(ch));
     return ch;
   } // skipWhitespace(Reader)
 
@@ -163,12 +224,5 @@ public class JSON {
   static boolean isWhitespace(int ch) {
     return (' ' == ch) || ('\n' == ch) || ('\r' == ch) || ('\t' == ch);
   } // isWhiteSpace(int)
-
-  /*
-   * Read character.
-   */
-  static int readChar(Reader source) throws IOException {
-    return source.read();
-  } // readChar(source)
 
 } // class JSON
