@@ -7,8 +7,8 @@ import java.util.ArrayList;
  * JSON hashes/objects.
  * 
  * @authors Jonathan Wang, Jinny Eo, Madel Sibal
- * November 2023
- */ 
+ *          November 2023
+ */
 public class JSONHash implements JSONValue {
 
   // +--------+------------------------------------------------------
@@ -36,7 +36,7 @@ public class JSONHash implements JSONValue {
     Iterator<KVPair<JSONString, JSONValue>> iterator = kvPairs.iterator();
     while (iterator.hasNext()) {
       KVPair<JSONString, JSONValue> kvPair = iterator.next();
-      result.append("\"").append(kvPair.key()).append("\": ").append(kvPair.value());
+      result.append(kvPair.key()).append(": ").append(kvPair.value());
       if (iterator.hasNext()) {
         result.append(", ");
       }
